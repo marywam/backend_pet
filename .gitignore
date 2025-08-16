@@ -1,0 +1,15 @@
+# Python
+.env/
+*/.env
+__pycache__/
+
+# Virtual environment
+/virtual/
+/venv/
+
+
+
+
+# Migrations (optional — uncomment if you don’t want to track them)
+myPet/migrations/
+*/migrations/__pycache__/
