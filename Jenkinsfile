@@ -1,9 +1,8 @@
 pipeline {
-    
     agent {
         docker {
             image 'python:3.11-slim'
-            args '-u root'  // ensures you can install extra packages if needed
+            args '-u root'
         }
     }
 
@@ -11,39 +10,108 @@ pipeline {
 
         stage("Checkout") {
             steps {
-                checkout scm   // 👈 pulls your repo into the workspace
+                checkout scm
             }
         }
 
-        stage("build") {
+        // For feature branches (dev, marystage, feature-*)
+        stage("Build & Test (Parallel)") {
+            when {
+                anyOf {
+                    branch pattern: "feature-.*", comparator: "REGEXP"
+                    branch "dev"
+                    branch "marystage"
+                }
+            }
+            parallel {
+                stage("Build") {
+                    steps {
+                        echo "🔨 Building the project...."
+                    }
+                }
+                stage("Test") {
+                    steps {
+                        echo "🧪 Running the tests...."
+                        sh '''
+                            cd ecommerce
+                            pip install --upgrade pip
+                            pip install -r requirements.txt
+                            python manage.py test
+                        '''
+                    }
+                }
+            }
+        }
 
+        // For master only
+        stage("Build") {
+            when {
+                branch "master"
+            }
             steps {
-                echo "Building the project...."
-                
+                echo "🔨 Building on master branch...."
             }
         }
 
-        stage("test") {
-
-            steps{
-                echo "Running the tests...."
-                 sh '''
-                     cd ecommerce
-                     pip install --upgrade pip
-                     pip install -r requirements.txt
-                     python manage.py test
+        stage("Test") {
+            when {
+                branch "master"
+            }
+            steps {
+                echo "🧪 Running tests on master...."
+                sh '''
+                    cd ecommerce
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                    python manage.py test
                 '''
             }
         }
 
-        stage("deploy") {
+        stage("Docker Build") {
             when {
-                anyOf {
-                    branch 'master'
+                branch "master"
+            }
+            steps {
+                echo "🐳 Building Docker image...."
+                sh "docker build -t your-dockerhub-username/pet_app:latest ."
+            }
+        }
+
+        stage("Docker Push") {
+            when {
+                branch "master"
+            }
+            steps {
+                echo "📤 Pushing Docker image...."
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push your-dockerhub-username/pet_app:latest
+                    '''
                 }
             }
-            steps{
-                echo "Deploying the project...."
+        }
+
+        stage("Docker Cleanup") {
+            when {
+                branch "master"
+            }
+            steps {
+                echo "🧹 Cleaning up unused Docker images...."
+                sh '''
+                    docker image prune -af
+                '''
+            }
+        }
+
+        stage("Deploy") {
+            when {
+                branch "master"
+            }
+            steps {
+                echo "🚀 Deploying the project...."
+                // add your AWS EC2/ECS deploy commands here
             }
         }
     }
