@@ -1,6 +1,11 @@
 pipeline {
     
-    agent any 
+    agent {
+        docker {
+            image 'python:3.11-slim'
+            args '-u root'  // ensures you can install extra packages if needed
+        }
+    }
 
     stages {
 
