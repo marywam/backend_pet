@@ -1,14 +1,10 @@
 pipeline {
-    agent {
-        docker {
-            image 'python:3.11-slim'
-            args '-u root'
-        }
-    }
+    agent none   // 👈 default to none, then define agents per stage
 
     stages {
 
         stage("Checkout") {
+            agent any
             steps {
                 checkout scm
             }
@@ -25,11 +21,23 @@ pipeline {
             }
             parallel {
                 stage("Build") {
+                    agent {
+                        docker {
+                            image 'python:3.11-slim'
+                            args '-u root'
+                        }
+                    }
                     steps {
                         echo "🔨 Building the project...."
                     }
                 }
                 stage("Test") {
+                    agent {
+                        docker {
+                            image 'python:3.11-slim'
+                            args '-u root'
+                        }
+                    }
                     steps {
                         echo "🧪 Running the tests...."
                         sh '''
@@ -45,8 +53,12 @@ pipeline {
 
         // For master only
         stage("Build") {
-            when {
-                branch "master"
+            when { branch "master" }
+            agent {
+                docker {
+                    image 'python:3.11-slim'
+                    args '-u root'
+                }
             }
             steps {
                 echo "🔨 Building on master branch...."
@@ -54,8 +66,12 @@ pipeline {
         }
 
         stage("Test") {
-            when {
-                branch "master"
+            when { branch "master" }
+            agent {
+                docker {
+                    image 'python:3.11-slim'
+                    args '-u root'
+                }
             }
             steps {
                 echo "🧪 Running tests on master...."
@@ -69,9 +85,8 @@ pipeline {
         }
 
         stage("Docker Build") {
-            when {
-                branch "master"
-            }
+            when { branch "master" }
+            agent any   // 👈 run on Jenkins node with Docker
             steps {
                 echo "🐳 Building Docker image...."
                 sh "docker build -t marywam/pet_app:latest ."
@@ -79,9 +94,8 @@ pipeline {
         }
 
         stage("Docker Push") {
-            when {
-                branch "master"
-            }
+            when { branch "master" }
+            agent any   // 👈 run on Jenkins node with Docker
             steps {
                 echo "📤 Pushing Docker image...."
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -94,21 +108,17 @@ pipeline {
         }
 
         stage("Docker Cleanup") {
-            when {
-                branch "master"
-            }
+            when { branch "master" }
+            agent any   // 👈 run on Jenkins node with Docker
             steps {
                 echo "🧹 Cleaning up unused Docker images...."
-                sh '''
-                    docker image prune -af
-                '''
+                sh 'docker image prune -af'
             }
         }
 
         stage("Deploy") {
-            when {
-                branch "master"
-            }
+            when { branch "master" }
+            agent any   // 👈 run on Jenkins node with Docker
             steps {
                 echo "🚀 Deploying the project...."
                 // add your AWS EC2/ECS deploy commands here
