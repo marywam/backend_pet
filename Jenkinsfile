@@ -9,6 +9,12 @@ pipeline {
 
     stages {
 
+        stage("Checkout") {
+            steps {
+                checkout scm   // 👈 pulls your repo into the workspace
+            }
+        }
+
         stage("build") {
 
             steps {
