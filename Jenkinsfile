@@ -28,6 +28,7 @@ pipeline {
             steps{
                 echo "Running the tests...."
                  sh '''
+                     cd ecommerce
                      pip install --upgrade pip
                      pip install -r requirements.txt
                      python manage.py test
