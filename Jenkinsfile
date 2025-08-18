@@ -74,7 +74,7 @@ pipeline {
             }
             steps {
                 echo "🐳 Building Docker image...."
-                sh "docker build -t your-dockerhub-username/pet_app:latest ."
+                sh "docker build -t marywam/pet_app:latest ."
             }
         }
 
@@ -87,7 +87,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker push your-dockerhub-username/pet_app:latest
+                        docker push marywam/pet_app:latest
                     '''
                 }
             }
